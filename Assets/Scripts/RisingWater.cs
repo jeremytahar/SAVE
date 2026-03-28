@@ -4,24 +4,29 @@ using System.Collections;
 
 public class RisingWater : MonoBehaviour
 {
-    [Header("Réglages")]
     public float growthSpeed = 0.5f;
-    public float startDelay = 3f;
+    public int countdownSeconds = 3;
 
-    [Header("UI & Positions")]
     public TextMeshProUGUI countdownText;
     public Transform spawnPoint;
     public GameObject player;
 
+    public Transform waterSurface;
+
     private bool canRise = false;
     private Vector3 initialScale;
     private Vector3 initialPosition;
+    private Vector3 initialSurfacePosition;
     private Coroutine currentRoutine;
 
     void Start()
     {
         initialScale = transform.localScale;
         initialPosition = transform.position;
+        if (waterSurface != null)
+        {
+            initialSurfacePosition = waterSurface.position;
+        }
         RestartSequence();
     }
 
@@ -31,29 +36,31 @@ public class RisingWater : MonoBehaviour
         transform.localScale = initialScale;
         transform.position = initialPosition;
 
+        if (waterSurface != null)
+        {
+            waterSurface.position = initialSurfacePosition;
+        }
+
         if (currentRoutine != null) StopCoroutine(currentRoutine);
         currentRoutine = StartCoroutine(StartCountdown());
     }
 
     IEnumerator StartCountdown()
     {
-        // 1. PHASE D'ALERTE UNIQUEMENT
         if (countdownText != null)
         {
-            countdownText.text = "ATTENTION !\nL'EAU VA MONTER";
-            countdownText.fontSize = 80; // Ajustez cette taille selon vos réglages de Width/Height
-        }
-
-        // On attend le temps défini dans startDelay (ex: 3 secondes)
-        yield return new WaitForSeconds(startDelay);
-
-        // 2. EFFACER LE TEXTE
-        if (countdownText != null)
-        {
+            for (int i = countdownSeconds; i > 0; i--)
+            {
+                countdownText.text = $"ATTENTION !\nL'EAU VA MONTER\n{i}";
+                yield return new WaitForSeconds(1f);
+            }
             countdownText.text = "";
         }
+        else
+        {
+            yield return new WaitForSeconds(countdownSeconds);
+        }
 
-        // L'eau commence à monter immédiatement après
         canRise = true;
     }
 
@@ -63,6 +70,11 @@ public class RisingWater : MonoBehaviour
         {
             transform.localScale += new Vector3(0, growthSpeed * Time.deltaTime, 0);
             transform.position += new Vector3(0, (growthSpeed * Time.deltaTime) / 2, 0);
+
+            if (waterSurface != null)
+            {
+                waterSurface.position += new Vector3(0, growthSpeed * Time.deltaTime, 0);
+            }
         }
     }
 
