@@ -4,13 +4,14 @@ using System.Collections;
 
 public class RisingWater : MonoBehaviour
 {
+    [Header("Settings")]
     public float growthSpeed = 0.5f;
     public int countdownSeconds = 3;
 
+    [Header("References")]
     public TextMeshProUGUI countdownText;
     public Transform spawnPoint;
     public GameObject player;
-
     public Transform waterSurface;
 
     private bool canRise = false;
@@ -19,14 +20,22 @@ public class RisingWater : MonoBehaviour
     private Vector3 initialSurfacePosition;
     private Coroutine currentRoutine;
 
+    private WaitForSeconds oneSecondWait;
+    private CoinManager coinManager;
+
     void Start()
     {
+        oneSecondWait = new WaitForSeconds(1f);
+        coinManager = FindAnyObjectByType<CoinManager>();
+
         initialScale = transform.localScale;
         initialPosition = transform.position;
+
         if (waterSurface != null)
         {
             initialSurfacePosition = waterSurface.position;
         }
+
         RestartSequence();
     }
 
@@ -52,7 +61,7 @@ public class RisingWater : MonoBehaviour
             for (int i = countdownSeconds; i > 0; i--)
             {
                 countdownText.text = $"ATTENTION !\nL'EAU VA MONTER\n{i}";
-                yield return new WaitForSeconds(1f);
+                yield return oneSecondWait;
             }
             countdownText.text = "";
         }
@@ -68,12 +77,14 @@ public class RisingWater : MonoBehaviour
     {
         if (canRise)
         {
-            transform.localScale += new Vector3(0, growthSpeed * Time.deltaTime, 0);
-            transform.position += new Vector3(0, (growthSpeed * Time.deltaTime) / 2, 0);
+            float translation = growthSpeed * Time.deltaTime;
+
+            transform.localScale += new Vector3(0, translation, 0);
+            transform.position += new Vector3(0, translation / 2f, 0);
 
             if (waterSurface != null)
             {
-                waterSurface.position += new Vector3(0, growthSpeed * Time.deltaTime, 0);
+                waterSurface.position += new Vector3(0, translation, 0);
             }
         }
     }
@@ -82,8 +93,17 @@ public class RisingWater : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            player.transform.position = spawnPoint.position;
+            if (player != null && spawnPoint != null)
+            {
+                player.transform.position = spawnPoint.position;
+            }
+
             RestartSequence();
+
+            if (coinManager != null)
+            {
+                coinManager.ResetGame();
+            }
         }
     }
 }
