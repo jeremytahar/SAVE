@@ -14,7 +14,8 @@ public class RisingWater : MonoBehaviour
     public GameObject player;
     public Transform waterSurface;
 
-    public bool canRise { get; private set; } = false; private Vector3 initialScale;
+    public bool canRise = false;
+    private Vector3 initialScale;
     private Vector3 initialPosition;
     private Vector3 initialSurfacePosition;
     private Coroutine currentRoutine;

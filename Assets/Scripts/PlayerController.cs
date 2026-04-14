@@ -92,13 +92,4 @@ public class PlayerController : MonoBehaviour
 
         rb.linearVelocity = new Vector3(finalMove * moveSpeed, rb.linearVelocity.y, 0f);
     }
-
-    void LateUpdate()
-    {
-        Transform hips = transform.Find("mixamorig:Hips");
-        if (hips != null)
-        {
-            hips.localPosition = new Vector3(0, hips.localPosition.y, 0);
-        }
-    }
 }
