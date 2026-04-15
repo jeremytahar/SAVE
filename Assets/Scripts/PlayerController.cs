@@ -18,6 +18,10 @@ public class PlayerController : MonoBehaviour
     private float distToGround;
     private bool isJumping = false;
 
+    // --- VARIABLES AJOUTÉES POUR L'OSC ---
+    private float oscLeftState = 0f;
+    private float oscRightState = 0f;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -26,8 +30,13 @@ public class PlayerController : MonoBehaviour
         distToGround = col.bounds.extents.y;
 
         waterScript = FindAnyObjectByType<RisingWater>();
+
+        oscLeftState = 0f;
+        oscRightState = 0f;
+        moveInput = Vector2.zero;
     }
 
+    // -- CONTRÔLES NOUVEAU SYSTÈME D'INPUT (CLAVIER STANDARD) --
     public void OnMove(InputValue value)
     {
         moveInput = value.Get<Vector2>();
@@ -91,5 +100,37 @@ public class PlayerController : MonoBehaviour
         if (wallLeft && allowedHorizontalInput < 0) finalMove = 0;
 
         rb.linearVelocity = new Vector3(finalMove * moveSpeed, rb.linearVelocity.y, 0f);
+    }
+
+    // --- CONTRÔLES OSC (CHATAIGNE / MAKEY MAKEY) ---
+
+    public void OSCJump(int value)
+    {
+        bool waterAllowsMovement = (waterScript == null || waterScript.canRise);
+
+        if (value > 0 && isGrounded && !isJumping && waterAllowsMovement)
+        {
+            isJumping = true;
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0, 0);
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+
+            if (anim != null)
+                anim.SetBool("IsJumping", true);
+        }
+    }
+
+    public void OSCLeft(int value)
+    {
+        // Si on appuie (1), on donne une force de -1 vers la gauche. Sinon 0.
+        oscLeftState = (value > 0) ? -1f : 0f;
+        // On fusionne la gauche et la droite pour éviter les bugs si on appuie sur les deux en même temps
+        moveInput.x = oscLeftState + oscRightState;
+    }
+
+    public void OSCRight(int value)
+    {
+        // Si on appuie (1), on donne une force de 1 vers la droite. Sinon 0.
+        oscRightState = (value > 0) ? 1f : 0f;
+        moveInput.x = oscLeftState + oscRightState;
     }
 }

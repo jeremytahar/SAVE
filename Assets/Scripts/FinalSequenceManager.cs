@@ -11,24 +11,34 @@ public class FinalSequenceManager : MonoBehaviour
     public float openAngle = 90f;
     public float moveSpeed = 3f;
     public float rotationSpeed = 10f;
-
-    [Tooltip("Durée de votre animation FBX de victoire (Success)")]
     public float successAnimDuration = 2.5f;
+    public float danceDuration = 5f;
+
+    [Header("UI")]
+    public GameObject coinAchievementUI;
+    public float achievementDisplayTime = 3f;
 
     [Header("Références")]
     public RisingWater waterScript;
     public GameObject player;
+    public GameFlowManager flowManager;
 
     private bool sequenceStarted = false;
     private Animator anim;
+    private float startTime;
 
     private void Start()
     {
+        startTime = Time.time; // On note l'heure de démarrage
         if (player != null) anim = player.GetComponentInChildren<Animator>();
+        if (coinAchievementUI != null) coinAchievementUI.SetActive(false);
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnTriggerStay(Collider other) // Utiliser Stay est plus sûr que Enter au restart
     {
+        // Sécurité : On ignore le trigger pendant les 2 premières secondes du jeu
+        if (Time.time < startTime + 2f) return;
+
         if (other.CompareTag("Player") && !sequenceStarted)
         {
             int coinsLeft = GameObject.FindGameObjectsWithTag(coinTag).Length;
@@ -42,6 +52,12 @@ public class FinalSequenceManager : MonoBehaviour
 
     IEnumerator HandleFullSequence()
     {
+        if (coinAchievementUI != null)
+        {
+            coinAchievementUI.SetActive(true);
+            StartCoroutine(HideAchievementMessage());
+        }
+
         PlayerController controller = player.GetComponent<PlayerController>();
         if (controller != null) controller.enabled = false;
 
@@ -52,7 +68,7 @@ public class FinalSequenceManager : MonoBehaviour
             rb.isKinematic = true;
         }
 
-        player.transform.position = new Vector3(cornerPoint.transform.position.x, cornerPoint.position.y, player.transform.position.z);
+        player.transform.position = new Vector3(player.transform.position.x, cornerPoint.position.y, player.transform.position.z);
 
         Vector3 lookDir = (cornerPoint.position - player.transform.position).normalized;
         lookDir.y = 0;
@@ -61,30 +77,20 @@ public class FinalSequenceManager : MonoBehaviour
             player.transform.rotation = Quaternion.LookRotation(lookDir);
         }
 
-        if (anim != null)
-        {
-            anim.Play("Success", -1, 0f);
-        }
+        if (anim != null) anim.Play("Success", -1, 0f);
 
         if (waterScript != null) waterScript.canRise = false;
         Quaternion targetDoorRot = Quaternion.Euler(0, openAngle, 0);
 
         StartCoroutine(OpenDoorOverTime(targetDoorRot));
-
         yield return new WaitForSeconds(successAnimDuration);
 
-        if (anim != null)
-        {
-            anim.Play("Run", -1, 0f);
-        }
+        if (anim != null) anim.Play("Run", -1, 0f);
 
         yield return StartCoroutine(MoveToPoint(cornerPoint.position));
         yield return StartCoroutine(MoveToPoint(danceFloorPoint.position));
 
-        if (anim != null)
-        {
-            anim.Play("Dance", -1, 0f);
-        }
+        if (anim != null) anim.Play("Dance", -1, 0f);
 
         Quaternion faceCamera = Quaternion.Euler(0, 0, 0);
         float rotTime = 0;
@@ -94,6 +100,21 @@ public class FinalSequenceManager : MonoBehaviour
             player.transform.rotation = Quaternion.Slerp(player.transform.rotation, faceCamera, rotTime);
             yield return null;
         }
+
+        yield return new WaitForSeconds(danceDuration);
+
+        if (coinAchievementUI != null) coinAchievementUI.SetActive(false);
+
+        if (flowManager != null)
+        {
+            flowManager.ShowReplay();
+        }
+    }
+
+    IEnumerator HideAchievementMessage()
+    {
+        yield return new WaitForSeconds(achievementDisplayTime);
+        if (coinAchievementUI != null) coinAchievementUI.SetActive(false);
     }
 
     IEnumerator OpenDoorOverTime(Quaternion targetRot)
